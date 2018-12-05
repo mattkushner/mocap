@@ -6,16 +6,18 @@ import maya.mel as mel
 def setup_mocap():
     fps = "120fps"
     src_path = "//gary/main/JOBS/1844N_Intel_CES/3D/ASSETS/Motion_Capture/20181126_DP/FBX/"
-    dest_path = "//gary/main/JOBS/1844N_Intel_CES/3D/SOFTWARE/MAYA/STREETLIGHT_PREVIZ/scenes/mocap/"
+    dest_path = "//gary/main/JOBS/1844N_Intel_CES/3D/SOFTWARE/MAYA/STREETLIGHT_PREVIZ/scenes/mocap/source/"
     fbxs = os.listdir(src_path)
     for fbx in fbxs:
         # load fbx and save scene
         fbx_path = os.path.join(src_path, fbx)
         mb_path = os.path.join(dest_path, fbx.replace('.fbx', '.mb'))
         mc.file(force=True, new=True)
+        print('Creating new file')
         mc.currentUnit(time=fps)
         mel.eval("SavePreferences;")
-        mel.eval('file -import "'+file_path+'";')
+        mel.eval('file -import "'+fbx_path+'";')
+        print('Importing '+fbx_path)
         # remove namespaces in prep for label_joints()
         mc.namespace(moveNamespace=['eActor_v002:Solving', ':'])
         mc.namespace(removeNamespace='eActor_v002:Solving')
@@ -26,6 +28,7 @@ def setup_mocap():
             label_joints(hips[0])
             mc.file(rename=mb_path)
             mc.file(save=True, force=True, options="v=0;", type="mayaBinary")
+            print('Saving '+mb_path)
 
 def label_joints(root_jnt):
     # enable HIK Controls
@@ -62,11 +65,12 @@ def label_joints(root_jnt):
     
 def load_mocap():
     mb_root = "//gary/main/JOBS/1844N_Intel_CES/3D/SOFTWARE/MAYA/STREETLIGHT_PREVIZ/scenes/mocap/"
-    emma_file = "rp_emma_rigged_011_HIK_native.mb"
-    dennis_file = "rp_dennis_rigged_004_HIK_native.mb"
-    emma_path = os.path.join(mb_root, emma_file)
-    dennis_path = os.path.join(mb_root, dennis_file)
-    mbs = os.listdir(mb_root)
+    emma_file = "rp_emma_rigged_011_HIK_native.ma"
+    dennis_file = "rp_dennis_rigged_004_HIK_native.ma"
+    emma_path = mb_root+'/rigs/'+emma_file
+    dennis_path = mb_root+'/rigs/'+dennis_file
+    source_root = mb_root+'/source/'
+    mbs = os.listdir(source_root)
     for mb in mbs:
         if mb not in [emma_file, dennis_file]:
             suffix = 'emma'
@@ -84,10 +88,13 @@ def load_mocap():
                 suffix = 'emma'
             else:
                 print(mb)
-            import_path = os.path.join(mb_path, mb)
-            mc.file(open_path, force=True, open=True)
+            import_path = source_root+'/'+mb
+            mel.eval('file -force -open "'+open_path+'";')
+            print('Opening '+open_path)
             mel.eval('file -import "'+import_path+'";')
-            mb_path = import_path.replace('.mb', '_'+suffix+'.mb')
-            mc.file(rename=mb_path)
+            print('Importing '+import_path)
+            dest_path = os.path.normpath(os.path.join(mb_root, 'connected', mb.replace('.mb', '_'+suffix+'.mb')))
+            mc.file(rename=dest_path)
             mc.file(save=True, force=True, options="v=0;", type="mayaBinary")
+            print('Saving '+dest_path)
             
